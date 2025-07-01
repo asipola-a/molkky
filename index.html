@@ -302,17 +302,17 @@
         function updatePlayersList() {
             const list = document.getElementById('playersList');
             list.innerHTML = '';
-            
+    
             players.forEach((player, index) => {
-                const item = document.createElement('div');
-                item.className = 'player-item';
-                item.innerHTML = `
-                    <span>${player.name}</span>
-                    <button class="btn-danger" onclick="removePlayer(${index})">Poista</button>
-                `;
-                list.appendChild(item);
-            });
-        }
+        const item = document.createElement('div');
+        item.className = 'player-item';
+        item.innerHTML = `
+            <span>${player.name}</span>
+            <button class="btn-danger" onclick="removePlayer(${index})">Poista</button>
+        `;
+        list.appendChild(item);
+    });
+}
 
         function updateStartButton() {
             const startBtn = document.getElementById('startBtn');
@@ -326,6 +326,13 @@
             gameEnded = false;
             currentPlayerIndex = 0;
             scoreHistory = [];
+            
+            // Nollaa kaikki pelaajat
+            players.forEach(player => {
+                player.score = 0;
+                player.eliminated = false;
+                player.missCount = 0;
+            });
             
             document.getElementById('setup').style.display = 'none';
             document.getElementById('gameArea').style.display = 'block';
@@ -345,7 +352,8 @@
                 playerIndex: currentPlayerIndex,
                 oldScore: oldScore,
                 points: points,
-                oldMissCount: player.missCount
+                oldMissCount: player.missCount,
+                oldEliminated: player.eliminated
             });
             
             if (points === 0) {
@@ -364,6 +372,8 @@
                     // Voittaja!
                     gameEnded = true;
                     showWinner(player.name);
+                    updateScoreboard();
+                    return;
                 }
             }
             
@@ -375,55 +385,72 @@
         }
 
         function nextPlayer() {
-            do {
-                currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
-            } while (players[currentPlayerIndex].eliminated);
-            
-            // Tarkista onko pelaajia jäljellä
+            // Tarkista onko aktiivisia pelaajia jäljellä
             const activePlayers = players.filter(p => !p.eliminated);
-            if (activePlayers.length <= 1 && !gameEnded) {
+            if (activePlayers.length <= 1) {
                 gameEnded = true;
                 if (activePlayers.length === 1) {
                     showWinner(activePlayers[0].name);
+                } else {
+                    showWinner("Ei voittajaa - kaikki karsiutuivat!");
                 }
+                return;
             }
+            
+            // Etsi seuraava aktiivinen pelaaja
+            let attempts = 0;
+            do {
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+                attempts++;
+                // Estä ääretön silmukka
+                if (attempts > players.length) {
+                    console.error("Virhe: ei löydy aktiivista pelaajaa");
+                    return;
+                }
+            } while (players[currentPlayerIndex].eliminated);
             
             updateCurrentPlayer();
         }
 
         function updateScoreboard() {
-            const scoreboard = document.getElementById('scoreboard');
-            scoreboard.innerHTML = '';
-            
-            players.forEach((player, index) => {
-                const div = document.createElement('div');
-                div.className = 'player-score';
-                
-                if (player.eliminated) {
-                    div.classList.add('eliminated');
-                } else if (player.score === 50) {
-                    div.classList.add('winner');
-                } else if (index === currentPlayerIndex && !gameEnded) {
-                    div.classList.add('current-player');
-                }
-                
-                let statusText = '';
-                if (player.eliminated) {
-                    statusText = ' (KARSIUTUNUT)';
-                } else if (player.score === 50) {
-                    statusText = ' (VOITTAJA!)';
-                } else if (player.missCount > 0) {
-                    statusText = ` (${player.missCount}/3 ohia)`;
-                }
-                
-                div.innerHTML = `
-                    <div class="player-name">${player.name}${statusText}</div>
-                    <div class="player-points">${player.score}</div>
-                `;
-                
-                scoreboard.appendChild(div);
-            });
+    const scoreboard = document.getElementById('scoreboard');
+    scoreboard.innerHTML = '';
+    
+    players.forEach((player, index) => {
+        const div = document.createElement('div');
+        div.className = 'player-score';
+        
+        if (player.eliminated) {
+            div.classList.add('eliminated');
+        } else if (player.score === 50) {
+            div.classList.add('winner');
+        } else if (index === currentPlayerIndex && !gameEnded) {
+            div.classList.add('current-player');
         }
+        
+        let statusText = '';
+        if (player.eliminated) {
+            statusText = ' (KARSIUTUNUT)';
+        } else if (player.score === 50) {
+            statusText = ' (VOITTAJA!)';
+        } else if (player.missCount > 0) {
+            statusText = ` (${player.missCount}/3 ohia)`;
+        }
+        
+        // Luo elementit erikseen
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'player-name';
+        nameDiv.textContent = player.name + statusText;
+        
+        const pointsDiv = document.createElement('div');
+        pointsDiv.className = 'player-points';
+        pointsDiv.textContent = player.score;
+        
+        div.appendChild(nameDiv);
+        div.appendChild(pointsDiv);
+        scoreboard.appendChild(div);
+    });
+}
 
         function updateCurrentPlayer() {
             if (gameEnded) {
@@ -433,15 +460,15 @@
             
             const currentPlayer = players[currentPlayerIndex];
             document.getElementById('currentPlayerName').textContent = 
-                `${currentPlayer.name} - Vuoro ${currentPlayerIndex + 1}`;
+                `${currentPlayer.name} - Vuoro`;
         }
 
         function showWinner(name) {
-            const winnerDiv = document.getElementById('winnerMessage');
-            winnerDiv.innerHTML = `🏆 ${name} voitti pelin! 🏆`;
-            winnerDiv.style.display = 'block';
-            document.getElementById('scoreInput').style.display = 'none';
-        }
+    const winnerDiv = document.getElementById('winnerMessage');
+    winnerDiv.textContent = `🏆 ${name} voitti pelin! 🏆`;
+    winnerDiv.style.display = 'block';
+    document.getElementById('scoreInput').style.display = 'none';
+}
 
         function undoLastScore() {
             if (scoreHistory.length === 0) return;
@@ -451,7 +478,7 @@
             
             player.score = lastMove.oldScore;
             player.missCount = lastMove.oldMissCount;
-            player.eliminated = false;
+            player.eliminated = lastMove.oldEliminated;
             
             currentPlayerIndex = lastMove.playerIndex;
             gameEnded = false;
@@ -478,7 +505,7 @@
             updateStartButton();
         }
 
-        // Enter-näppäin lisää pelaajan
+                // Enter-näppäin lisää pelaajan
         document.getElementById('playerName').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 addPlayer();
@@ -487,3 +514,4 @@
     </script>
 </body>
 </html>
+
