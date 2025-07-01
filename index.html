@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mölkky Pisteidenlaskuri</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .setup {
+            padding: 20px;
+        }
+
+        .player-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .players-list {
+            margin-top: 15px;
+        }
+
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9fa;
+            margin-bottom: 5px;
+            border-radius: 8px;
+        }
+
+        .game-area {
+            display: none;
+            padding: 20px;
+        }
+
+        .scoreboard {
+            margin-bottom: 20px;
+        }
+
+        .player-score {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            border-left: 5px solid #3498db;
+        }
+
+        .player-score.winner {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+
+        .player-score.eliminated {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+            opacity: 0.7;
+        }
+
+        .player-name {
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .player-points {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .current-player {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+        }
+
+        .score-input {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .score-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .score-btn {
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .score-btn:hover {
+            background: #e9ecef;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .controls button {
+            flex: 1;
+        }
+
+        .winner-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 480px) {
+            .score-buttons {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Mölkky</h1>
+            <p>Pisteidenlaskuri</p>
+        </div>
+
+        <div class="setup" id="setup">
+            <div class="player-input">
+                <input type="text" id="playerName" placeholder="Pelaajan nimi" maxlength="20">
+                <button class="btn-primary" onclick="addPlayer()">Lisää</button>
+            </div>
+            
+            <div class="players-list" id="playersList"></div>
+            
+            <button class="btn-success" onclick="startGame()" id="startBtn" style="width: 100%; margin-top: 15px; display: none;">
+                Aloita peli
+            </button>
+        </div>
+
+        <div class="game-area" id="gameArea">
+            <div id="winnerMessage"></div>
+            
+            <div class="scoreboard" id="scoreboard"></div>
+            
+            <div class="score-input" id="scoreInput">
+                <h3 id="currentPlayerName">Pelaajan vuoro</h3>
+                
+                <div class="score-buttons">
+                    <button class="score-btn" onclick="addScore(1)">1</button>
+                    <button class="score-btn" onclick="addScore(2)">2</button>
+                    <button class="score-btn" onclick="addScore(3)">3</button>
+                    <button class="score-btn" onclick="addScore(4)">4</button>
+                    <button class="score-btn" onclick="addScore(5)">5</button>
+                    <button class="score-btn" onclick="addScore(6)">6</button>
+                    <button class="score-btn" onclick="addScore(7)">7</button>
+                    <button class="score-btn" onclick="addScore(8)">8</button>
+                    <button class="score-btn" onclick="addScore(9)">9</button>
+                    <button class="score-btn" onclick="addScore(10)">10</button>
+                    <button class="score-btn" onclick="addScore(11)">11</button>
+                    <button class="score-btn" onclick="addScore(12)">12</button>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn-danger" onclick="addScore(0)">Ohi (0p)</button>
+                    <button class="btn-primary" onclick="undoLastScore()">Kumoa</button>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn-danger" onclick="resetGame()">Uusi peli</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let players = [];
+        let currentPlayerIndex = 0;
+        let gameStarted = false;
+        let gameEnded = false;
+        let scoreHistory = [];
+
+        function addPlayer() {
+            const nameInput = document.getElementById('playerName');
+            const name = nameInput.value.trim();
+            
+            if (name && players.length < 8) {
+                players.push({
+                    name: name,
+                    score: 0,
+                    eliminated: false,
+                    missCount: 0
+                });
+                nameInput.value = '';
+                updatePlayersList();
+                updateStartButton();
+            }
+        }
+
+        function removePlayer(index) {
+            players.splice(index, 1);
+            updatePlayersList();
+            updateStartButton();
+        }
+
+        function updatePlayersList() {
+            const list = document.getElementById('playersList');
+            list.innerHTML = '';
+            
+            players.forEach((player, index) => {
+                const item = document.createElement('div');
+                item.className = 'player-item';
+                item.innerHTML = `
+                    <span>${player.name}</span>
+                    <button class="btn-danger" onclick="removePlayer(${index})">Poista</button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function updateStartButton() {
+            const startBtn = document.getElementById('startBtn');
+            startBtn.style.display = players.length >= 2 ? 'block' : 'none';
+        }
+
+        function startGame() {
+            if (players.length < 2) return;
+            
+            gameStarted = true;
+            gameEnded = false;
+            currentPlayerIndex = 0;
+            scoreHistory = [];
+            
+            document.getElementById('setup').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'block';
+            
+            updateScoreboard();
+            updateCurrentPlayer();
+        }
+
+        function addScore(points) {
+            if (gameEnded) return;
+            
+            const player = players[currentPlayerIndex];
+            const oldScore = player.score;
+            
+            // Tallenna historia
+            scoreHistory.push({
+                playerIndex: currentPlayerIndex,
+                oldScore: oldScore,
+                points: points,
+                oldMissCount: player.missCount
+            });
+            
+            if (points === 0) {
+                player.missCount++;
+                if (player.missCount >= 3) {
+                    player.eliminated = true;
+                }
+            } else {
+                player.missCount = 0;
+                player.score += points;
+                
+                // Tarkista 50 pisteen ylitys
+                if (player.score > 50) {
+                    player.score = 25;
+                } else if (player.score === 50) {
+                    // Voittaja!
+                    gameEnded = true;
+                    showWinner(player.name);
+                }
+            }
+            
+            updateScoreboard();
+            
+            if (!gameEnded) {
+                nextPlayer();
+            }
+        }
+
+        function nextPlayer() {
+            do {
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+            } while (players[currentPlayerIndex].eliminated);
+            
+            // Tarkista onko pelaajia jäljellä
+            const activePlayers = players.filter(p => !p.eliminated);
+            if (activePlayers.length <= 1 && !gameEnded) {
+                gameEnded = true;
+                if (activePlayers.length === 1) {
+                    showWinner(activePlayers[0].name);
+                }
+            }
+            
+            updateCurrentPlayer();
+        }
+
+        function updateScoreboard() {
+            const scoreboard = document.getElementById('scoreboard');
+            scoreboard.innerHTML = '';
+            
+            players.forEach((player, index) => {
+                const div = document.createElement('div');
+                div.className = 'player-score';
+                
+                if (player.eliminated) {
+                    div.classList.add('eliminated');
+                } else if (player.score === 50) {
+                    div.classList.add('winner');
+                } else if (index === currentPlayerIndex && !gameEnded) {
+                    div.classList.add('current-player');
+                }
+                
+                let statusText = '';
+                if (player.eliminated) {
+                    statusText = ' (KARSIUTUNUT)';
+                } else if (player.score === 50) {
+                    statusText = ' (VOITTAJA!)';
+                } else if (player.missCount > 0) {
+                    statusText = ` (${player.missCount}/3 ohia)`;
+                }
+                
+                div.innerHTML = `
+                    <div class="player-name">${player.name}${statusText}</div>
+                    <div class="player-points">${player.score}</div>
+                `;
+                
+                scoreboard.appendChild(div);
+            });
+        }
+
+        function updateCurrentPlayer() {
+            if (gameEnded) {
+                document.getElementById('scoreInput').style.display = 'none';
+                return;
+            }
+            
+            const currentPlayer = players[currentPlayerIndex];
+            document.getElementById('currentPlayerName').textContent = 
+                `${currentPlayer.name} - Vuoro ${currentPlayerIndex + 1}`;
+        }
+
+        function showWinner(name) {
+            const winnerDiv = document.getElementById('winnerMessage');
+            winnerDiv.innerHTML = `🏆 ${name} voitti pelin! 🏆`;
+            winnerDiv.style.display = 'block';
+            document.getElementById('scoreInput').style.display = 'none';
+        }
+
+        function undoLastScore() {
+            if (scoreHistory.length === 0) return;
+            
+            const lastMove = scoreHistory.pop();
+            const player = players[lastMove.playerIndex];
+            
+            player.score = lastMove.oldScore;
+            player.missCount = lastMove.oldMissCount;
+            player.eliminated = false;
+            
+            currentPlayerIndex = lastMove.playerIndex;
+            gameEnded = false;
+            
+            document.getElementById('winnerMessage').style.display = 'none';
+            document.getElementById('scoreInput').style.display = 'block';
+            
+            updateScoreboard();
+            updateCurrentPlayer();
+        }
+
+        function resetGame() {
+            players = [];
+            currentPlayerIndex = 0;
+            gameStarted = false;
+            gameEnded = false;
+            scoreHistory = [];
+            
+            document.getElementById('setup').style.display = 'block';
+            document.getElementById('gameArea').style.display = 'none';
+            document.getElementById('winnerMessage').style.display = 'none';
+            
+            updatePlayersList();
+            updateStartButton();
+        }
+
+        // Enter-näppäin lisää pelaajan
+        document.getElementById('playerName').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addPlayer();
+            }
+        });
+    </script>
+</body>
+</html>
